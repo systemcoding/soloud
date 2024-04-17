@@ -40,15 +40,9 @@ namespace SoLoud
 		m3dVelocity[0] = 0;
 		m3dVelocity[1] = 0;
 		m3dVelocity[2] = 0;
-		m3dVolume = 0;
 		mCollider = 0;
 		mColliderData = 0;
 		mAttenuator = 0;
-		mDopplerValue = 0;
-		mFlags = 0;
-		mHandle = 0;
-		for (int i = 0; i < MAX_CHANNELS; i++)
-			mChannelVolume[i] = 0;
 	}
 
 	void AudioSourceInstance3dData::init(AudioSource &aSource)
@@ -63,6 +57,16 @@ namespace SoLoud
 		mAttenuator = aSource.mAttenuator;
 		m3dVolume = 1.0f;
 		mDopplerValue = 1.0f;
+	}
+
+	AudioSourceResampleData::AudioSourceResampleData()
+	{
+		mBuffer = 0;
+	}
+	
+	AudioSourceResampleData::~AudioSourceResampleData()
+	{
+		delete[] mBuffer;
 	}
 
 	AudioSourceInstance::AudioSourceInstance()
@@ -95,13 +99,12 @@ namespace SoLoud
 			mCurrentChannelVolume[i] = 0;
 		}
 		// behind pointers because we swap between the two buffers
-		mResampleData[0] = 0;
-		mResampleData[1] = 0;
+		mResampleData[0] = new AudioSourceResampleData;
+		mResampleData[1] = new AudioSourceResampleData;
 		mSrcOffset = 0;
 		mLeftoverSamples = 0;
 		mDelaySamples = 0;
-		mOverallVolume = 0;
-		mOverallRelativePlaySpeed = 1;
+
 	}
 
 	AudioSourceInstance::~AudioSourceInstance()
@@ -110,7 +113,9 @@ namespace SoLoud
 		for (i = 0; i < FILTERS_PER_STREAM; i++)
 		{
 			delete mFilter[i];
-		}		
+		}
+		delete mResampleData[0];
+		delete mResampleData[1];
 	}
 
 	void AudioSourceInstance::init(AudioSource &aSource, int aPlayIndex)
@@ -143,10 +148,6 @@ namespace SoLoud
 		{
 			mFlags |= AudioSourceInstance::INAUDIBLE_TICK;
 		}
-		if (aSource.mFlags & AudioSource::DISABLE_AUTOSTOP)
-		{
-			mFlags |= AudioSourceInstance::DISABLE_AUTOSTOP;
-		}
 	}
 
 	result AudioSourceInstance::rewind()
@@ -176,7 +177,7 @@ namespace SoLoud
 			getAudio(mScratch, samples, samples);
 			samples_to_discard -= samples;
 		}
-		mStreamPosition = aSeconds;
+		mStreamPosition = offset;
 		return SO_NO_ERROR;
 	}
 
@@ -246,18 +247,6 @@ namespace SoLoud
 		else
 		{
 			mFlags &= ~SINGLE_INSTANCE;
-		}
-	}
-
-	void AudioSource::setAutoStop(bool aAutoStop)
-	{
-		if (aAutoStop)
-		{
-			mFlags &= ~DISABLE_AUTOSTOP;
-		}
-		else
-		{
-			mFlags |= DISABLE_AUTOSTOP;
 		}
 	}
 
@@ -343,7 +332,7 @@ namespace SoLoud
 	}
 
 
-	float AudioSourceInstance::getInfo(unsigned int /*aInfoKey*/)
+	float AudioSourceInstance::getInfo(unsigned int aInfoKey)
 	{
 	    return 0;
 	}

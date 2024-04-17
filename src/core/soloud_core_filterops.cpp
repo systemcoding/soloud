@@ -33,7 +33,7 @@ namespace SoLoud
 		if (aFilterId >= FILTERS_PER_STREAM)
 			return;
 
-		lockAudioMutex_internal();
+		lockAudioMutex();
 		delete mFilterInstance[aFilterId];
 		mFilterInstance[aFilterId] = 0;
 		
@@ -42,7 +42,7 @@ namespace SoLoud
 		{
 			mFilterInstance[aFilterId] = mFilter[aFilterId]->createInstance();
 		}
-		unlockAudioMutex_internal();
+		unlockAudioMutex();
 	}
 
 	float Soloud::getFilterParameter(handle aVoiceHandle, unsigned int aFilterId, unsigned int aAttributeId)
@@ -53,27 +53,27 @@ namespace SoLoud
 
 		if (aVoiceHandle == 0)
 		{
-			lockAudioMutex_internal();
+			lockAudioMutex();		
 			if (mFilterInstance[aFilterId])
 			{
 				ret = mFilterInstance[aFilterId]->getFilterParameter(aAttributeId);
 			}
-			unlockAudioMutex_internal();
+			unlockAudioMutex();
 			return ret;
 		}
 
-		int ch = getVoiceFromHandle_internal(aVoiceHandle);
+		int ch = getVoiceFromHandle(aVoiceHandle);
 		if (ch == -1) 
 		{
 			return ret;
 		}
-		lockAudioMutex_internal();
+		lockAudioMutex();		
 		if (mVoice[ch] &&
 			mVoice[ch]->mFilter[aFilterId])
 		{
 			ret = mVoice[ch]->mFilter[aFilterId]->getFilterParameter(aAttributeId);
 		}
-		unlockAudioMutex_internal();
+		unlockAudioMutex();
 		
 		return ret;
 	}
@@ -85,12 +85,12 @@ namespace SoLoud
 
 		if (aVoiceHandle == 0)
 		{
-			lockAudioMutex_internal();
+			lockAudioMutex();		
 			if (mFilterInstance[aFilterId])
 			{
 				mFilterInstance[aFilterId]->setFilterParameter(aAttributeId, aValue);
 			}
-			unlockAudioMutex_internal();
+			unlockAudioMutex();
 			return;
 		}
 
@@ -110,12 +110,12 @@ namespace SoLoud
 
 		if (aVoiceHandle == 0)
 		{
-			lockAudioMutex_internal();
+			lockAudioMutex();		
 			if (mFilterInstance[aFilterId])
 			{
 				mFilterInstance[aFilterId]->fadeFilterParameter(aAttributeId, aTo, aTime, mStreamTime);
 			}
-			unlockAudioMutex_internal();
+			unlockAudioMutex();
 			return;
 		}
 
@@ -135,12 +135,12 @@ namespace SoLoud
 
 		if (aVoiceHandle == 0)
 		{
-			lockAudioMutex_internal();
+			lockAudioMutex();		
 			if (mFilterInstance[aFilterId])
 			{
 				mFilterInstance[aFilterId]->oscillateFilterParameter(aAttributeId, aFrom, aTo, aTime, mStreamTime);
 			}
-			unlockAudioMutex_internal();
+			unlockAudioMutex();
 			return;
 		}
 

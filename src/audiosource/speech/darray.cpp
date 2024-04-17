@@ -66,5 +66,5 @@ void darray::put(int aData)
 {
 	char *s = getDataInPos(mUsed);
 
-	*s = (char)aData;
+	*s = aData;
 }

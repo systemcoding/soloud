@@ -43,20 +43,11 @@ namespace SoLoud
 	class WaveShaperFilter : public Filter
 	{
 	public:
-		enum FILTERPARAMS {
-			WET = 0,
-			AMOUNT
-		};
-		float mAmount;
+		float mAmount, mWet;
 		virtual WaveShaperFilterInstance *createInstance();
-		result setParams(float aAmount);
+		result setParams(float aAmount, float aWet = 1.0f);
 		WaveShaperFilter();
 		virtual ~WaveShaperFilter();
-		virtual int getParamCount();
-		virtual const char* getParamName(unsigned int aParamIndex);
-		virtual unsigned int getParamType(unsigned int aParamIndex);
-		virtual float getParamMax(unsigned int aParamIndex);
-		virtual float getParamMin(unsigned int aParamIndex);
 	};
 }
 

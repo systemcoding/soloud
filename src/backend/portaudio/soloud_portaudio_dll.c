@@ -21,8 +21,6 @@ freely, subject to the following restrictions:
    3. This notice may not be removed or altered from any source
    distribution.
 */
-#if defined(WITH_PORTAUDIO)
-
 #include <stdlib.h>
 #include <math.h>
 
@@ -54,24 +52,24 @@ static Pa_OpenDefaultStreamProc dPa_OpenDefaultStream = NULL;
 
 
 #ifdef WINDOWS_VERSION
-#include <windows.h>
+#include <Windows.h>
 
-static HMODULE pta_openDll()
+static HMODULE openDll()
 {
     HMODULE dllh = LoadLibrary("portaudio_x86.dll");
     return dllh;
 }
 
-static void *pta_getdllproc(HMODULE dllhandle, const char *procname)
+static void *getdllproc(HMODULE dllhandle, const char *procname)
 {
     HMODULE dllh = (HMODULE)dllhandle;
-    return (void*)GetProcAddress(dllh, (LPCSTR)procname);
+    return GetProcAddress(dllh, procname);
 }
 
 #else
 #include <dlfcn.h> // dll functions
 
-static void* pta_openDll()
+static void* openDll()
 {
     void* res = dlopen("libportaudio_x86.so", RTLD_LAZY);
 
@@ -80,7 +78,7 @@ static void* pta_openDll()
 	return res;
 }
 
-static void *pta_getdllproc(void* dllhandle, const char *procname)
+static void *getdllproc(void* dllhandle, const char *procname)
 {
     void* library = dllhandle;
     return dlsym(library,procname);
@@ -90,7 +88,7 @@ static void *pta_getdllproc(void* dllhandle, const char *procname)
 
 
 
-static int pta_load_dll()
+static int load_dll()
 {
 #ifdef WINDOWS_VERSION
 	HMODULE dll = NULL;
@@ -103,15 +101,15 @@ static int pta_load_dll()
 		return 1;
 	}
 
-    dll = pta_openDll();
+    dll = openDll();
 
     if (dll)
     {
-		dPa_Initialize = (Pa_InitializeProc)pta_getdllproc(dll,"Pa_Initialize");
-		dPa_Terminate = (Pa_TerminateProc)pta_getdllproc(dll,"Pa_Terminate");
-		dPa_CloseStream = (Pa_CloseStreamProc)pta_getdllproc(dll,"Pa_CloseStream");
-		dPa_StartStream = (Pa_StartStreamProc)pta_getdllproc(dll,"Pa_StartStream");
-		dPa_OpenDefaultStream = (Pa_OpenDefaultStreamProc)pta_getdllproc(dll,"Pa_OpenDefaultStream");
+		dPa_Initialize = (Pa_InitializeProc)getdllproc(dll,"Pa_Initialize");
+		dPa_Terminate = (Pa_TerminateProc)getdllproc(dll,"Pa_Terminate");
+		dPa_CloseStream = (Pa_CloseStreamProc)getdllproc(dll,"Pa_CloseStream");
+		dPa_StartStream = (Pa_StartStreamProc)getdllproc(dll,"Pa_StartStream");
+		dPa_OpenDefaultStream = (Pa_OpenDefaultStreamProc)getdllproc(dll,"Pa_OpenDefaultStream");
 
 		if (dPa_Initialize == NULL ||
 			dPa_Terminate == NULL ||
@@ -124,38 +122,38 @@ static int pta_load_dll()
 		}
 		return 1;
 	}
-	return 0;
+	return 0;	
 }
 
 int dll_Pa_found()
 {
-	return pta_load_dll();
+	return load_dll();
 }
 
 PaError dll_Pa_Initialize( void )
 {
-	if (pta_load_dll())
+	if (load_dll())
 		return dPa_Initialize();
 	return paNotInitialized;
 }
 
 PaError dll_Pa_Terminate( void )
 {
-	if (pta_load_dll())
+	if (load_dll())
 		return dPa_Terminate();
 	return paNotInitialized;
 }
 
 PaError dll_Pa_CloseStream( PaStream *stream )
 {
-	if (pta_load_dll())
+	if (load_dll())
 		return dPa_CloseStream(stream);
 	return paNotInitialized;
 }
 
 PaError dll_Pa_StartStream( PaStream *stream )
 {
-	if (pta_load_dll())
+	if (load_dll())
 		return dPa_StartStream(stream);
 	return paNotInitialized;
 }
@@ -169,9 +167,8 @@ PaError dll_Pa_OpenDefaultStream( PaStream** stream,
                             PaStreamCallback *streamCallback,
                             void *userData )
 {
-	if (pta_load_dll())
+	if (load_dll())
 		return dPa_OpenDefaultStream(stream,numInputChannels,numOutputChannels,sampleFormat,sampleRate,framesPerBuffer,streamCallback,userData);
 	return paNotInitialized;
 }
 
-#endif

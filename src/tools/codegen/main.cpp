@@ -1,6 +1,6 @@
 ﻿/*
 SoLoud audio engine
-Copyright (c) 2013-2020 Jari Komppa
+Copyright (c) 2013-2016 Jari Komppa
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -28,9 +28,7 @@ freely, subject to the following restrictions:
 #include <vector>
 #include <string>
 
-#define VERSION "SoLoud C-Api Code Generator (c)2013-2020 Jari Komppa http://iki.fi/sol/"
-
-//#define PRINT_FUNCTIONS
+#define VERSION "SoLoud C-Api Code Generator (c)2013-2016 Jari Komppa http://iki.fi/sol/"
 
 #define OUTDIR "../src/c_api/"
 #define PYOUTDIR "../scripts/"
@@ -40,41 +38,25 @@ using namespace std;
 char *gIncludeFile[] =
 {
 	"../include/soloud.h",
-	"../include/soloud_ay.h",
 	"../include/soloud_audiosource.h",
-	"../include/soloud_bassboostfilter.h",
 	"../include/soloud_biquadresonantfilter.h",
-	"../include/soloud_bus.h",
-//	"../include/soloud_c.h",
-	"../include/soloud_dcremovalfilter.h",
-	"../include/soloud_echofilter.h",
-//	"../include/soloud_error.h",
-	"../include/soloud_fader.h",
-	"../include/soloud_fft.h",
-	"../include/soloud_fftfilter.h",
-//	"../include/soloud_file.h",
-//	"../include/soloud_file_hack_off.h",
-//	"../include/soloud_file_hack_on.h",
-	"../include/soloud_filter.h",
-	"../include/soloud_flangerfilter.h",
-	"../include/soloud_freeverbfilter.h",
-//	"../include/soloud_internal.h",
 	"../include/soloud_lofifilter.h",
-//	"../include/soloud_misc.h",
-	"../include/soloud_monotone.h",
-	"../include/soloud_noise.h",
-	"../include/soloud_openmpt.h",
-	"../include/soloud_queue.h",
-	"../include/soloud_robotizefilter.h",
-	"../include/soloud_sfxr.h",
+	"../include/soloud_bus.h",
+	"../include/soloud_echofilter.h",
+	"../include/soloud_fader.h",
+	"../include/soloud_fftfilter.h",
+	"../include/soloud_bassboostfilter.h",
+	"../include/soloud_filter.h",
 	"../include/soloud_speech.h",
-	"../include/soloud_tedsid.h",
 //	"../include/soloud_thread.h",
-	"../include/soloud_vic.h",
-	"../include/soloud_vizsn.h",
 	"../include/soloud_wav.h",
-	"../include/soloud_waveshaperfilter.h",
-	"../include/soloud_wavstream.h"
+	"../include/soloud_wavstream.h",
+	"../include/soloud_sfxr.h",
+	"../include/soloud_flangerfilter.h",
+	"../include/soloud_dcremovalfilter.h",
+	"../include/soloud_openmpt.h",
+	"../include/soloud_monotone.h",
+	"../include/soloud_tedsid.h"
 };
 
 int gIncludeFileCount = sizeof(gIncludeFile) / sizeof(char*);
@@ -110,8 +92,6 @@ string time_d("double");
 string handle_d("unsigned int");
 string bool_d("int");
 string result_d("int");
-int sourceline = 0;
-string latestline = "";
 
 string subs_str(string &aSrc)
 {
@@ -126,7 +106,6 @@ int is_banned(string aName)
 {	
 	if (aName.find("Instance") != string::npos) return 1;
 	if (aName == "AudioCollider") return 1;
-	if (aName == "AudioAttenuator") return 1;
 	if (aName == "Filter")  return 1;
 	if (aName == "AudioSource") return 1;
 	if (aName == "Fader") return 1;
@@ -167,7 +146,7 @@ int is_alphanumeric(char c)
 		return 1;
 	if (c >= 'A' && c <= 'Z')
 		return 1;
-	if (c == '_' || c == ':')
+	if (c == '_')
 		return 1;
 	return 0;
 }
@@ -175,14 +154,9 @@ int is_alphanumeric(char c)
 string token(char * buf, int &ofs)
 {
 	string s = "";
-	
+
 	while (is_whitespace(buf[ofs])) ofs++;
-
-	if (buf[ofs] == '\n')
-	{
-		sourceline++;
-	}
-
+	
 	if (is_alphanumeric(buf[ofs]))
 	{
 		while (is_alphanumeric(buf[ofs]))
@@ -214,7 +188,6 @@ string token(char * buf, int &ofs)
 			ofs++;
 		}		
 	}
-	latestline += s + " ";	
 	return s;
 }
 
@@ -225,7 +198,7 @@ string token(char * buf, int &ofs)
 #define NEXTTOKEN { s = token(b, ofs);  }
 #define EXPECT(x) if (token(b, ofs) != x) { PARSEERROR }
 #endif
-#define PARSEERROR { printf("Parse error near\n---8<---\n%s\n---8<---\nparser line %d, source line ~%d\n", (latestline.length() < 200)? latestline.c_str() : latestline.c_str() + latestline.length() - 100, __LINE__, sourceline); exit(0); }
+#define PARSEERROR { printf("Parse error near \"%s\", parser line %d\n", s.c_str(), __LINE__); exit(0); }
 #define IGNORE token(b, ofs);
 #define ALLOW(x) { int tofs = ofs; if (token(b, tofs) == x) { NEXTTOKEN; } }
 
@@ -306,29 +279,9 @@ void parse(const char *aFilename, int aPrintProgress = 0)
 	Class *c = NULL;
 	string s;
 	int omit = 0;
-	sourceline = 1;
-	latestline = "";
 	while (b[ofs])
 	{
 		NEXTTOKEN;
-		if (s == "private" || s == "friend")
-		{
-			printf("'%s' not allowed - ", s.c_str());
-			PARSEERROR;
-		}
-		if (s == "union")
-		{
-			// skip unions
-			NEXTTOKEN;
-			ALLOW("\n");
-			// may be "union {", "union name {", "union name newline {"
-			if (s != "{") NEXTTOKEN; 
-			if (s != "{") NEXTTOKEN;
-			if (s != "{") PARSEERROR;
-			while (s != "}") NEXTTOKEN;
-			while (s != ";") NEXTTOKEN; // may be union {}; or union {} name;
-		}
-		else
 		if (s == "struct")
 		{
 			// skip helper structs
@@ -402,7 +355,7 @@ void parse(const char *aFilename, int aPrintProgress = 0)
 			{
 				NEXTTOKEN;
 				// Okay, kludge time: let's call thread functions a class, even though they're not, so we can ignore it
-				if (s == "Thread" || s == "FFT" || s == "Misc" || s == "FreeverbImpl")
+				if (s == "Thread")
 				{
 					c = new Class;
 					c->mName = "Instance";
@@ -521,8 +474,9 @@ void parse(const char *aFilename, int aPrintProgress = 0)
 					
 				}
 				else
-				if (s == "public:")
+				if (s == "public")
 				{
+					EXPECT(":");
 					omit = !omit;
 //					printf("\n%s going omit %d", c->mName.c_str(), omit);
 				}
@@ -537,6 +491,7 @@ void parse(const char *aFilename, int aPrintProgress = 0)
 						NEXTTOKEN;
 					}
 
+
 					if (s == "const")
 					{
 						NEXTTOKEN;
@@ -548,13 +503,6 @@ void parse(const char *aFilename, int aPrintProgress = 0)
 						NEXTTOKEN;
 						vt1 = s;
 					}
-
-					if (s == "const")
-					{
-						NEXTTOKEN;
-						vt1 += " " + s;
-					}
-
 					if (s == "~")
 					{
 						// virtual dtor
@@ -603,14 +551,7 @@ void parse(const char *aFilename, int aPrintProgress = 0)
 						parse_params(m, b, ofs);
 						if (!omit)
 						{
-							if (!c)
-							{
-								PARSEERROR;
-							}
-							else
-							{
-								c->mMethod.push_back(m);
-							}
+							c->mMethod.push_back(m);
 						}
 						else
 						{
@@ -665,7 +606,7 @@ void fileheader(FILE * f)
 		"\n"
 		"/*\n"
 		"SoLoud audio engine\n"
-		"Copyright (c) 2013-2020 Jari Komppa\n"
+		"Copyright (c) 2013-2016 Jari Komppa\n"
 		"\n"
 		"This software is provided 'as-is', without any express or implied\n"
 		"warranty. In no event will the authors be held liable for any damages\n"
@@ -737,22 +678,46 @@ void emit_cppend(FILE * f)
 void emit_func(FILE * f, int aClass, int aMethod)
 {
 	int i;
+	int initfunc = 0;
 	Class *c = gClass[aClass];
 	Method *m = c->mMethod[aMethod];
 
-	fprintf(f, 
-		"%s %s_%s(void * aClassPtr", 
-		m->mRetType.c_str(), 
-		c->mName.c_str(), 
-		m->mFuncName.c_str());
+	if (c->mName == "Soloud" && m->mFuncName.find("_init") != string::npos)
+	{
+		// Init function, needs "a bit" of special handling.
+		initfunc = 1;
+		string fn = OUTDIR "soloud_c_" + m->mFuncName.substr(0, m->mFuncName.find_first_of('_')) + ".cpp";
+		f = fopen(fn.c_str(), "w");
+		fileheader(f);
+		emit_cppstart(f);
+	}
+
+	if (initfunc)
+	{
+		fprintf(f, 
+			"%s %s_%s(", 
+			m->mRetType.c_str(), 
+			c->mName.c_str(), 
+			m->mFuncName.c_str());
+	}
+	else
+	{
+		fprintf(f, 
+			"%s %s_%s(void * aClassPtr", 
+			m->mRetType.c_str(), 
+			c->mName.c_str(), 
+			m->mFuncName.c_str());
+	}
 
 	int had_defaults = 0;
 	for (i = 0; i < (signed)m->mParmName.size(); i++)
 	{
 		if (m->mParmValue[i] == "")
 		{
+			if (!(i == 0 && initfunc))
+				fprintf(f, ", ");
 			fprintf(f, 
-				", %s %s",
+				"%s %s",
 				m->mParmType[i].c_str(),
 				m->mParmName[i].c_str());
 		}
@@ -762,15 +727,27 @@ void emit_func(FILE * f, int aClass, int aMethod)
 		}
 	}
 	
-	fprintf(f, 
-		")\n"
-		"{\n"
-		"\t%s * cl = (%s *)aClassPtr;\n"
-		"\t%scl->%s(",
-		c->mName.c_str(),
-		c->mName.c_str(),
-		(m->mRetType == "void")?"":"return ",
-		m->mFuncName.c_str());
+	if (initfunc)
+	{
+		fprintf(f, 
+			")\n"
+			"{\n"
+			"\t%s%s(",
+			(m->mRetType == "void")?"":"return ",
+			m->mFuncName.c_str());
+	}
+	else
+	{
+		fprintf(f, 
+			")\n"
+			"{\n"
+			"\t%s * cl = (%s *)aClassPtr;\n"
+			"\t%scl->%s(",
+			c->mName.c_str(),
+			c->mName.c_str(),
+			(m->mRetType == "void")?"":"return ",
+			m->mFuncName.c_str());
+	}
 
 	for (i = 0; i < (signed)m->mParmName.size(); i++)
 	{
@@ -793,28 +770,53 @@ void emit_func(FILE * f, int aClass, int aMethod)
 
 	if (had_defaults)
 	{
-		fprintf(f, 
-			"%s %s_%sEx(void * aClassPtr", 
-			m->mRetType.c_str(), 
-			c->mName.c_str(), 
-			m->mFuncName.c_str());
-		for (i =0; i < (signed)m->mParmName.size(); i++)
+		if (initfunc)
 		{
 			fprintf(f, 
-				", %s %s",
+				"%s %s_%sEx(", 
+				m->mRetType.c_str(), 
+				c->mName.c_str(), 
+				m->mFuncName.c_str());
+		}
+		else
+		{
+			fprintf(f, 
+				"%s %s_%sEx(void * aClassPtr", 
+				m->mRetType.c_str(), 
+				c->mName.c_str(), 
+				m->mFuncName.c_str());
+		}
+		for (i =0; i < (signed)m->mParmName.size(); i++)
+		{
+			if (!(i == 0 && initfunc))
+				fprintf(f, ", ");
+			fprintf(f, 
+				"%s %s",
 				m->mParmType[i].c_str(),
 				m->mParmName[i].c_str());
 		}
 		
-		fprintf(f, 
-			")\n"
-			"{\n"
-			"\t%s * cl = (%s *)aClassPtr;\n"
-			"\t%scl->%s(",
-			c->mName.c_str(),
-			c->mName.c_str(),
-			(m->mRetType == "void")?"":"return ",
-			m->mFuncName.c_str());
+		if (initfunc)
+		{
+			fprintf(f, 
+				")\n"
+				"{\n"
+				"\t%s%s(",
+				(m->mRetType == "void")?"":"return ",
+				m->mFuncName.c_str());
+		}
+		else
+		{
+			fprintf(f, 
+				")\n"
+				"{\n"
+				"\t%s * cl = (%s *)aClassPtr;\n"
+				"\t%scl->%s(",
+				c->mName.c_str(),
+				c->mName.c_str(),
+				(m->mRetType == "void")?"":"return ",
+				m->mFuncName.c_str());
+		}
 
 		for (i = 0; i < (signed)m->mParmName.size(); i++)
 		{
@@ -831,6 +833,12 @@ void emit_func(FILE * f, int aClass, int aMethod)
 			");\n"
 			"}\n"
 			"\n");
+	}
+
+	if (initfunc)
+	{
+		emit_cppend(f);
+		fclose(f);
 	}
 }
 
@@ -1110,15 +1118,11 @@ void inherit_stuff()
 	}
 }
 
-#ifdef _MSC_VER
-  #define strcasecmp _stricmp
-#endif
-
 int main(int parc, char ** pars)
 {
 	printf(VERSION "\n");
 	
-	if (parc < 2 || strcasecmp(pars[1], "go") != 0)
+	if (parc < 2 || _stricmp(pars[1], "go") != 0)
 	{
 		printf("\nThis program will generate the 'C' api wrapper code.\n"
 			   "You probably ran this by mistake.\n"

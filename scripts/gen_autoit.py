@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # AutoIt wrapper generator
 
 from soloud_codegen import *
@@ -57,4 +56,4 @@ for x in soloud_func:
   fo.write("\n")
   
 fo.close()
-print("soloud.au3 generated")
+print "soloud.au3 generated"

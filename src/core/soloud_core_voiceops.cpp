@@ -28,7 +28,7 @@ freely, subject to the following restrictions:
 
 namespace SoLoud
 {
-	result Soloud::setVoiceRelativePlaySpeed_internal(unsigned int aVoice, float aSpeed)
+	result Soloud::setVoiceRelativePlaySpeed(unsigned int aVoice, float aSpeed)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
@@ -40,13 +40,13 @@ namespace SoLoud
 		if (mVoice[aVoice])
 		{
 			mVoice[aVoice]->mSetRelativePlaySpeed = aSpeed;
-			updateVoiceRelativePlaySpeed_internal(aVoice);
+			updateVoiceRelativePlaySpeed(aVoice);
 		}
 
 		return 0;
 	}
 
-	void Soloud::setVoicePause_internal(unsigned int aVoice, int aPause)
+	void Soloud::setVoicePause(unsigned int aVoice, int aPause)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
@@ -66,7 +66,7 @@ namespace SoLoud
 		}
 	}
 
-	void Soloud::setVoicePan_internal(unsigned int aVoice, float aPan)
+	void Soloud::setVoicePan(unsigned int aVoice, float aPan)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
@@ -89,19 +89,10 @@ namespace SoLoud
 				mVoice[aVoice]->mChannelVolume[4] = l;
 				mVoice[aVoice]->mChannelVolume[5] = r;
 			}
-			if (mVoice[aVoice]->mChannels == 8)
-			{
-				mVoice[aVoice]->mChannelVolume[2] = 1.0f / (float)sqrt(2.0f);
-				mVoice[aVoice]->mChannelVolume[3] = 1;
-				mVoice[aVoice]->mChannelVolume[4] = l;
-				mVoice[aVoice]->mChannelVolume[5] = r;
-				mVoice[aVoice]->mChannelVolume[6] = l;
-				mVoice[aVoice]->mChannelVolume[7] = r;
-			}
 		}
 	}
 
-	void Soloud::setVoiceVolume_internal(unsigned int aVoice, float aVolume)
+	void Soloud::setVoiceVolume(unsigned int aVoice, float aVolume)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
@@ -109,11 +100,11 @@ namespace SoLoud
 		if (mVoice[aVoice])
 		{
 			mVoice[aVoice]->mSetVolume = aVolume;
-			updateVoiceVolume_internal(aVoice);
+			updateVoiceVolume(aVoice);
 		}
 	}
 
-	void Soloud::stopVoice_internal(unsigned int aVoice)
+	void Soloud::stopVoice(unsigned int aVoice)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
@@ -122,22 +113,12 @@ namespace SoLoud
 		{
 			// Delete via temporary variable to avoid recursion
 			AudioSourceInstance * v = mVoice[aVoice];
-			mVoice[aVoice] = 0;
-
-			unsigned int i;
-			for (i = 0; i < mMaxActiveVoices; i++)
-			{
-				if (mResampleDataOwner[i] == v)
-				{
-					mResampleDataOwner[i] = NULL;
-				}
-			}
-
+			mVoice[aVoice] = 0;			
 			delete v;
 		}
 	}
 
-	void Soloud::updateVoiceRelativePlaySpeed_internal(unsigned int aVoice)
+	void Soloud::updateVoiceRelativePlaySpeed(unsigned int aVoice)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
@@ -145,18 +126,10 @@ namespace SoLoud
 		mVoice[aVoice]->mSamplerate = mVoice[aVoice]->mBaseSamplerate * mVoice[aVoice]->mOverallRelativePlaySpeed;
 	}
 
-	void Soloud::updateVoiceVolume_internal(unsigned int aVoice)
+	void Soloud::updateVoiceVolume(unsigned int aVoice)
 	{
 		SOLOUD_ASSERT(aVoice < VOICE_COUNT);
 		SOLOUD_ASSERT(mInsideAudioThreadMutex);
 		mVoice[aVoice]->mOverallVolume = mVoice[aVoice]->mSetVolume * m3dData[aVoice].m3dVolume;
-		if (mVoice[aVoice]->mFlags & AudioSourceInstance::PAUSED)
-		{
-			int i;
-			for (i = 0; i < MAX_CHANNELS; i++)
-			{
-				mVoice[aVoice]->mCurrentChannelVolume[i] = mVoice[aVoice]->mChannelVolume[i] * mVoice[aVoice]->mOverallVolume;
-			}
-		}
 	}
 }

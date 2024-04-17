@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ SoLoud RPGMaker ruby wrapper generator """
 
 import soloud_codegen
@@ -1276,6 +1275,6 @@ for x in soloud_codegen.soloud_type:
         fo.write('\tend\n')
 fo.write('end\n')
 
-print("rpgmaker_soloud.rb generated")
+print "rpgmaker_soloud.rb generated"
 
 fo.close()

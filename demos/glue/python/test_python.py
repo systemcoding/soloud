@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from soloud import *
 
 with Soloud() as audiolib:
@@ -16,13 +15,13 @@ with Soloud() as audiolib:
 	print(t)
 	audiolib.play(speech)
 
-	print("Enter text to speak (empty string quits)")
+	print "Enter text to speak (empty string quits)"
 	while t != "":
-		t = input(": ")
+		t = raw_input(": ")
 
 		speech.set_text(t);
 		audiolib.play(speech);
 
 	speech.close()
 
-print("Bye")
+print "Bye"

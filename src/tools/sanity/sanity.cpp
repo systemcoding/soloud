@@ -1,6 +1,6 @@
 /*
 SoLoud audio engine
-Copyright (c) 2013-2020 Jari Komppa
+Copyright (c) 2013-2018 Jari Komppa
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -70,15 +70,15 @@ int lastknownwrite = 0;
 #define CHECK_RES(x) tests++; if ((x)) { errorcount++; printf("Error on line %d, %s(): %s\n",__LINE__,__FUNCTION__, soloud.getErrorString((x)));}
 #define CHECK(x) tests++; if (!(x)) { errorcount++; printf("Error on line %d, %s(): Check \"%s\" fail\n",__LINE__,__FUNCTION__,#x);}
 #define CHECK_BUF_NONZERO(x, n) tests++; { int i, zero = 1; for (i = 0; i < (n); i++) if ((x)[i] != 0) zero = 0; if (zero) { errorcount++; printf("Error on line %d, %s(): buffer not nonzero\n",__LINE__,__FUNCTION__);}}
-#define CHECK_BUF_ZERO(x, n) tests++; { int i, diff = 0; for (i = 0; i < (n); i++) if ((x)[i] != 0) diff++; if (diff) { errorcount++; printf("Error on line %d, %s(): buffer not zero (%d / %d)\n",__LINE__,__FUNCTION__,diff,(n));}}
+#define CHECK_BUF_ZERO(x, n) tests++; { int i, zero = 1; for (i = 0; i < (n); i++) if ((x)[i] != 0) zero = 0; if (!zero) { errorcount++; printf("Error on line %d, %s(): buffer not zero\n",__LINE__,__FUNCTION__);}}
 #define CHECK_BUF_DIFF(x, y, n) tests++; { int i, same = 1; for (i = 0; i < (n); i++) if (fabs((x)[i] - (y)[i]) > 0.00001) same = 0; if (same) { errorcount++; printf("Error on line %d, %s(): buffers are equal\n",__LINE__,__FUNCTION__);}}
-#define CHECK_BUF_SAME(x, y, n) tests++; { int i, diff = 0; for (i = 0; i < (n); i++) if (fabs((x)[i] - (y)[i]) > 0.00001) diff++; if (diff) { errorcount++; printf("Error on line %d, %s(): buffers differ (%d / %d)\n",__LINE__,__FUNCTION__, diff, (n));}}
-#define CHECK_BUF_SAME_LASTKNOWN(x, n) tests++; { int i, diff = 0, ofs = 0; float maxdiff = 0.0f; for (i = 0; i < (n); i++) { if (fabs((x)[i] - lastknownscratch[i]) > 0.00001) diff++; if (fabs((x)[i] - lastknownscratch[i]) > maxdiff) { ofs = i; maxdiff = (float)fabs((x)[i] - lastknownscratch[i]); }} if (diff) { errorcount++; printf("Error on line %d, %s(): output differs from last known (%d / %d) maxdiff %1.5f at ofs %d\n",__LINE__,__FUNCTION__, diff, (n), maxdiff, ofs);}}
+#define CHECK_BUF_SAME(x, y, n) tests++; { int i, same = 1; for (i = 0; i < (n); i++) if (fabs((x)[i] - (y)[i]) > 0.00001) same = 0; if (!same) { errorcount++; printf("Error on line %d, %s(): buffers differ\n",__LINE__,__FUNCTION__);}}
+#define CHECK_BUF_SAME_LASTKNOWN(x, n) tests++; { int i, same = 1; for (i = 0; i < (n); i++) if (fabs((x)[i] - lastknownscratch[i]) > 0.00001) same = 0; if (!same) { errorcount++; printf("Error on line %d, %s(): output differs from last known\n",__LINE__,__FUNCTION__);}}
 #define CHECK_BUF_GTE(x, y, n) tests++; { int i, lt = 0; for (i = 0; i < (n); i++) if (fabs((x)[i]) - fabs((y)[i]) < 0) lt = 1; if (lt) { errorcount++; printf("Error on line %d, %s(): buffer %s magnitude not bigger than buffer %s \n",__LINE__,__FUNCTION__,#x, #y);}}
 #define CHECKLASTKNOWN(x, n) if (lastknownwrite && lastknownfile) { fwrite((x),1,(n)*sizeof(float),lastknownfile); } else if (lastknownfile) { fread(lastknownscratch,1,(n)*sizeof(float),lastknownfile); CHECK_BUF_SAME_LASTKNOWN((x), n); }
 
 #if defined(_MSC_VER)
-#include <windows.h>
+#include <Windows.h>
 
 long getmsec()
 {
@@ -187,7 +187,6 @@ void printinfo(const char * format, ...)
 // Soloud.mixSigned16
 // Prg.rand
 // Prg.srand
-// wav.getLength
 void testMisc()
 {
 	float scratch[2048];
@@ -198,7 +197,6 @@ void testMisc()
 	CHECK_RES(res);
 	SoLoud::Wav wav;
 	generateTestWave(wav);
-	CHECK(wav.getLength() != 0);
 	int ver = soloud.getVersion();
 	CHECK(ver == SOLOUD_VERSION);
 	printinfo("SoLoud version %d\n", ver);
@@ -225,21 +223,16 @@ void testMisc()
 	CHECK_BUF_NONZERO(scratch, 2000);
 	CHECK_BUF_NONZERO(scratch_i16, 2000);
 
-	SoLoud::Misc::Prg prg;
+	SoLoud::Prg prg;
 	prg.srand(0x1337);
 	int a = prg.rand();
 	prg.srand(0x1337);
 	int b = prg.rand();
 	CHECK(a == b);
 	a = 0;
-	int prev = prg.rand();
 	for (b = 0; b < 100; b++)
-	{
-		int next = prg.rand();
-		if (prev != next)
+		if (prg.rand() != prg.rand())
 			a = 1;
-		prev = next;
-	}
 	CHECK(a == 1);
 
 	soloud.deinit();
@@ -346,11 +339,9 @@ void testGetters()
 // Soloud.setVisualizationEnable
 // Soloud.calcFFT
 // Soloud.getWave
-// Soloud.getApproximateVolume
 // Bus.setVisualizationEnable
 // Bus.calcFFT
 // Bus.getWave
-// Bus.getApproximateVolume
 void testVis()
 {
 	float scratch[2048];
@@ -369,8 +360,6 @@ void testVis()
 	bus.setVisualizationEnable(true);
 
 	soloud.mix(scratch, 1000);
-	float approxvol = soloud.getApproximateVolume(0);
-	CHECK(approxvol != 0);
 
 	float *w = soloud.getWave();
 	CHECK(w != NULL);
@@ -383,9 +372,6 @@ void testVis()
 				nonzero = 1;
 		CHECK(nonzero != 0);
 	}
-
-	approxvol = bus.getApproximateVolume(0);
-	CHECK(approxvol != 0);
 
 	w = bus.getWave();
 	CHECK(w != NULL);
@@ -608,10 +594,8 @@ public:
 // Wav.set3dAttenuator
 // Soloud.update3dAudio
 // Soloud.setSpeakerPosition
-// Soloud.getSpeakerPosition
 // Soloud.set3dSoundSpeed
 // Wav.setInaudibleBehavior
-// Soloud.setInaudibleBehavior
 void test3d()
 {
 	customAttenuatorCollider customAC;
@@ -849,13 +833,6 @@ void test3d()
 	CHECK(soloud.isValidVoiceHandle(h) == 1);
 	soloud.stopAll();
 
-	h = soloud.play3d(wav, 10, 20, 30, 1, 1, 1, 0.0f);
-	soloud.setInaudibleBehavior(h, false, true); // don't tick, kill if inaudible
-	soloud.update3dAudio();
-	soloud.mix(scratch, 1000);
-	CHECK(soloud.isValidVoiceHandle(h) == 0);
-	soloud.stopAll();
-
 	wav.setInaudibleBehavior(false, true); // don't tick, kill if inaudible
 	h = soloud.play3d(wav, 10, 20, 30, 1, 1, 1, 0.0f);
 	soloud.update3dAudio();
@@ -905,14 +882,6 @@ void test3d()
 	CHECKLASTKNOWN(scratch, 2000);
 	soloud.stopAll();
 
-	float x, y, z;
-	soloud.setSpeakerPosition(0, 1, 2, 3);
-	soloud.getSpeakerPosition(0, x, y, z);
-	CHECK(x == 1 && y == 2 && z == 3);
-	soloud.setSpeakerPosition(0, 4, 5, 6);
-	soloud.getSpeakerPosition(0, x, y, z);
-	CHECK(x != 1 && y != 2 && z != 3);
-
 	soloud.deinit();
 }
 
@@ -928,7 +897,6 @@ void test3d()
 // Soloud.fadeFilterParameter
 // Soloud.oscillateFilterParameter
 // Soloud.setGlobalFilter
-// WaveShaperFilter.setParams
 void testFilters()
 {
 	float scratch[2048];
@@ -944,10 +912,6 @@ void testFilters()
 	SoLoud::BassboostFilter bass;
 	SoLoud::FlangerFilter flang;
 	SoLoud::DCRemovalFilter dc;
-	SoLoud::FFTFilter fft;
-	SoLoud::RobotizeFilter rob;
-	SoLoud::WaveShaperFilter wshap;
-
 	res = soloud.init(SoLoud::Soloud::CLIP_ROUNDOFF, SoLoud::Soloud::NULLDRIVER);
 	CHECK_RES(res);
 
@@ -976,30 +940,27 @@ void testFilters()
 	soloud.mix(scratch, 1000);
 	CHECKLASTKNOWN(scratch, 2000);
 	CHECK_BUF_DIFF(ref, scratch, 2000);
-	soloud.stopAll();
 	lofi.setParams(4000, 5);
 	h = soloud.play(wav);
 	soloud.fadeFilterParameter(h, 0, 0, 0.5f, 1.0f);
 	soloud.mix(scratch, 1000);
 	CHECKLASTKNOWN(scratch, 2000);
 	CHECK_BUF_DIFF(ref, scratch, 2000);
-	soloud.stopAll();
 	lofi.setParams(4000, 5);
 	h = soloud.play(wav);
 	soloud.oscillateFilterParameter(h, 0, 0, 0.25f, 0.75f, 0.5f);
 	soloud.mix(scratch, 1000);
 	CHECKLASTKNOWN(scratch, 2000);
 	CHECK_BUF_DIFF(ref, scratch, 2000);
-	soloud.stopAll();
 
-	biquad.setParams(SoLoud::BiquadResonantFilter::LOWPASS, 2000, 5);
+	biquad.setParams(SoLoud::BiquadResonantFilter::LOWPASS, 8000, 2000, 5);
 	wav.setFilter(0, &biquad);
 	soloud.play(wav);
 	soloud.mix(ref2, 1000);
 	CHECKLASTKNOWN(ref2, 2000);
 	CHECK_BUF_DIFF(ref, ref2, 2000);
 	soloud.stopAll();
-	biquad.setParams(SoLoud::BiquadResonantFilter::HIGHPASS, 1000, 5);
+	biquad.setParams(SoLoud::BiquadResonantFilter::HIGHPASS, 8000, 1000, 5);
 	soloud.play(wav);
 	soloud.mix(scratch, 1000);
 	CHECKLASTKNOWN(scratch, 2000);
@@ -1067,38 +1028,6 @@ void testFilters()
 	soloud.mix(scratch, 1000);
 	CHECKLASTKNOWN(scratch, 2000);
 	CHECK_BUF_DIFF(ref2, scratch, 2000);
-	soloud.stopAll();
-
-	wav.setFilter(0, &fft);
-	soloud.play(wav);
-	soloud.mix(ref2, 1000);
-	CHECKLASTKNOWN(ref2, 2000);
-	CHECK_BUF_DIFF(ref, ref2, 2000);
-	soloud.stopAll();
-	wav.setFilter(0, 0);
-
-	wav.setFilter(0, &rob);
-	soloud.play(wav);
-	soloud.mix(ref2, 1000);
-	CHECKLASTKNOWN(ref2, 2000);
-	CHECK_BUF_DIFF(ref, ref2, 2000);
-	soloud.stopAll();
-	wav.setFilter(0, 0);
-
-	wshap.setParams(0.05f);
-	wav.setFilter(0, &wshap);
-	soloud.play(wav);
-	soloud.mix(ref2, 1000);
-	CHECKLASTKNOWN(ref2, 2000);
-	CHECK_BUF_DIFF(ref, ref2, 2000);
-	soloud.stopAll();
-	wshap.setParams(0.005f);
-	soloud.play(wav);
-	soloud.mix(scratch, 1000);
-	CHECKLASTKNOWN(scratch, 2000);
-	CHECK_BUF_DIFF(ref2, scratch, 2000);
-	soloud.stopAll();
-	wav.setFilter(0, 0);
 
 	soloud.deinit();
 }
@@ -1114,7 +1043,6 @@ void testFilters()
 // Soloud.setPan
 // Soloud.setPanAbsolute
 // Soloud.setVolume
-// Wav.setVolume
 // Soloud.fadeVolume
 // Soloud.fadePan
 // Soloud.fadeRelativePlaySpeed
@@ -1132,8 +1060,6 @@ void testFilters()
 // Soloud.addVoiceToGroup
 // Soloud.isVoiceGroup
 // Soloud.isVoiceGroupEmpty
-// Soloud.countAudioSource
-// Soloud.getStreamPosition
 void testCore()
 {
 	float scratch[2048];
@@ -1208,15 +1134,6 @@ void testCore()
 	CHECKLASTKNOWN(scratch, 2000);
 	CHECK_BUF_DIFF(ref, scratch, 2000);
 	soloud.stopAll();
-
-	wav.setVolume(0.5f);
-	h = soloud.play(wav);
-	soloud.mix(scratch, 1000);
-	CHECKLASTKNOWN(scratch, 2000);
-	CHECK_BUF_GTE(ref, scratch, 2000);
-	CHECK_BUF_DIFF(ref, scratch, 2000);
-	soloud.stopAll();
-	wav.setVolume(1.0f);
 
 	h = soloud.play(wav);
 	soloud.setVolume(h, 0.5f);
@@ -1335,17 +1252,6 @@ void testCore()
 	soloud.destroyVoiceGroup(vg);
 	CHECK(soloud.isVoiceGroup(vg) == 0);
 
-	h = soloud.play(wav);
-	CHECK(soloud.getStreamPosition(h) == 0);
-	soloud.setLooping(h, true);
-	for (i = 0; i < 100; i++)
-		soloud.mix(scratch, 1000);
-	CHECK(soloud.getStreamPosition(h) != 0);
-	CHECK(soloud.countAudioSource(wav) != 0);
-	soloud.stopAll();
-	CHECK(soloud.countAudioSource(wav) == 0);
-
-
 	soloud.deinit();
 }
 
@@ -1354,11 +1260,6 @@ void testCore()
 // Speech.setText
 // Speech.setParams
 // Speech.setLooping
-// Speech.setLoopPoint
-// Speech.getLoopPoint
-// Speech.stop
-// Soloud.getLoopPoint
-// Soloud.setLoopPoint
 void testSpeech()
 {
 	float scratch[2048];
@@ -1375,14 +1276,6 @@ void testSpeech()
 	soloud.mix(ref, 1000);
 	CHECK_BUF_NONZERO(ref, 2000);
 	CHECKLASTKNOWN(ref, 2000);
-	soloud.stopAll();
-
-	speech.setParams(1330, 10, 0.5f, 1);
-	speech.setText("Why is it so loud");
-	soloud.play(speech);
-	soloud.mix(scratch, 1000);
-	CHECK_BUF_SAME(scratch, ref, 2000);
-	CHECKLASTKNOWN(scratch, 2000);
 	soloud.stopAll();
 
 	speech.setText("a different text");
@@ -1413,27 +1306,8 @@ void testSpeech()
 	soloud.play(speech);
 	for (i = 0; i < 100; i++)
 		soloud.mix(scratch, 1000);
-	soloud.mix(ref, 1000);
 	CHECK(soloud.getActiveVoiceCount() != 0);
-	speech.stop();
-	CHECK(soloud.getActiveVoiceCount() == 0);
 	soloud.stopAll();
-
-	speech.setLoopPoint(0.1f);
-	CHECK(speech.getLoopPoint() == 0.1f);
-	speech.setLoopPoint(0.5f);
-	CHECK(speech.getLoopPoint() != 0.1f);
-	int handle = soloud.play(speech);
-	soloud.setLoopPoint(handle, 0.1f);
-	CHECK(soloud.getLoopPoint(handle) == 0.1f);
-	soloud.setLoopPoint(handle, 0.5f);
-	CHECK(soloud.getLoopPoint(handle) != 0.1f);
-
-	for (i = 0; i < 100; i++)
-		soloud.mix(scratch, 1000);
-	soloud.mix(scratch, 1000);
-	CHECK_BUF_DIFF(ref, scratch, 1000);
-	CHECKLASTKNOWN(ref, 1000);
 
 	soloud.deinit();
 }
@@ -1479,16 +1353,6 @@ void testMixer()
 	soloud.deinit();
 }
 
-// base
-// avg 0.459, med 0.467 +- 0.033 (0.450 - 0.483)
-// avg 0.462, med 0.477 + -0.063 (0.446 - 0.509)
-// avg 0.466, med 0.485 +- 0.056 (0.457 - 0.513)
-
-// resamplers
-// avg 0.474, med 0.477 +- 0.037 (0.458 - 0.495)
-// avg 0.474, med 0.479 +- 0.029 (0.465 - 0.494)
-// avg 0.470, med 0.474 +- 0.033 (0.457 - 0.490)
-
 void testSpeedThings()
 {
 	float scratch[2048];
@@ -1500,9 +1364,7 @@ void testSpeedThings()
 	int j;
 	generateTestWave(wav);
 	int k;
-	long t = 0, c = 0, mn = 1000000, mx = 0;
-	long fst = getmsec();
-	for (k = 0; k < 100; k++)
+	for (k = 0; k < 10; k++)
 	{
 		long st = getmsec();
 		for (j = 0; j < 500; j++)
@@ -1516,16 +1378,8 @@ void testSpeedThings()
 				soloud.mix(scratch, 1000);
 		}
 		long et = getmsec();
-		c++;
-		long d = et - st;
-		t += d;
-		if (mn > d) mn = d;
-		if (mx < d) mx = d;
-
-		printf("Mix loop took %3.3f sec, avg %3.3f, med %3.3f +- %3.3f (%3.3f - %3.3f)\n", (et - st) / 1000.0f, t / (c * 1000.0f), (mn+mx) / 2000.0f, (mx-mn) / 1000.0f, mn / 1000.0f, mx / 1000.0f);
+		printf("Mix loop took %3.3f sec\n", (et - st) / 1000.0f);
 	}
-	long fet = getmsec();
-	printf("Total %3.3f sec\n", (fet - fst) / 1000.0f);
 	soloud.deinit();
 }
 
@@ -1557,8 +1411,8 @@ int main(int parc, char ** pars)
 	testFilters();
 	testCore();
 	testSpeech();
-	testSpeedThings();
-//	testMixer();
+	//testSpeedThings();
+	//testMixer();
 	printf("\n%d tests, %d error(s) ", tests, errorcount);
 	if (!lastknownwrite && errorcount)
 		printf("(To rebuild lastknown.wav, simply delete it)\n");
@@ -1576,95 +1430,53 @@ int main(int parc, char ** pars)
 /*
 TODO:
 ----
-SoLoud::Monotone
-SoLoud::Openmpt
-SoLoud::Queue
-SoLoud::WavStream
-SoLoud::Vizsn
-SoLoud::Vic
-SoLoud::TedSid
 Wav.load
 Wav.loadMem
 Wav.loadFile
 Wav.getLength
-Wav.loadRawWave8
-Wav.loadRawWave16
-Wav.loadRawWave
+Wav.setVolume
+Wav.setLooping
+Wav.setFilter
+Wav.stop
 WavStream.load
 WavStream.loadMem
 WavStream.loadToMem
 WavStream.loadFile
 WavStream.loadFileToMem
 WavStream.getLength
+WavStream.setLoopRange
+WavStream.setLooping
 Sfxr.resetParams
 Sfxr.loadParams
 Sfxr.loadParamsMem
 Sfxr.loadParamsFile
 Sfxr.loadPreset
+Sfxr.setLooping
 Openmpt.load
 Openmpt.loadMem
 Openmpt.loadFile
+Openmpt.setLooping
 Monotone.setParams
 Monotone.load
 Monotone.loadMem
 Monotone.loadFile
+Monotone.setLooping
 TedSid.load
 TedSid.loadToMem
 TedSid.loadMem
 TedSid.loadFileToMem
 TedSid.loadFile
+TedSid.setLooping
 Soloud.getInfo
-Queue.play
-Queue.getQueueCount
-Queue.isCurrentlyPlaying
-Queue.setParamsFromAudioSource
-Queue.setParams
-Vic.setModel
-Vic.getModel
-Vic.setRegister
-Vic.getRegister
-Vizsn.setText
+
 
 Not tested - abstract class
 ---------------------------
 AudioAttenuator.attenuate
 
-Not tested - the functionality is the same for all audio sources, tested for some source:
------------------------------------------------------------------------------------------
-Queue.setVolume
-Vic.setVolume
-Vizsn.setVolume
-Wav.setLooping
-WavStream.setLooping
-Sfxr.setLooping
-Openmpt.setLooping
-Monotone.setLooping
-TedSid.setLooping
-Queue.setLooping
-Queue.setInaudibleBehavior
-Vic.setLooping
-Vizsn.setLooping
-Bus.setLoopPoint
-Bus.getLoopPoint
-Monotone.setLoopPoint
-Monotone.getLoopPoint
-Openmpt.setLoopPoint
-Openmpt.getLoopPoint
-Queue.setLoopPoint
-Queue.getLoopPoint
-Sfxr.setLoopPoint
-Sfxr.getLoopPoint
-TedSid.setLoopPoint
-TedSid.getLoopPoint
-Vic.setLoopPoint
-Vic.getLoopPoint
-Vizsn.setLoopPoint
-Vizsn.getLoopPoint
-Wav.setLoopPoint
-Wav.getLoopPoint
-WavStream.setLoopPoint
-WavStream.getLoopPoint
-Wav.stop
+Not tested - the functionality is the same for all audio sources, tested for Wav:
+---------------------------------------------------------------------------------
+Speech.stop
 WavStream.stop
 Sfxr.stop
 Openmpt.stop
@@ -1742,33 +1554,4 @@ TedSid.set3dCollider
 TedSid.set3dAttenuator
 TedSid.setInaudibleBehavior
 TedSid.setFilter
-Vizsn.set3dMinMaxDistance
-Vizsn.set3dAttenuation
-Vizsn.set3dDopplerFactor
-Vizsn.set3dListenerRelative
-Vizsn.set3dDistanceDelay
-Vizsn.set3dCollider
-Vizsn.set3dAttenuator
-Vizsn.setInaudibleBehavior
-Vizsn.setFilter
-Vic.set3dMinMaxDistance
-Vic.set3dAttenuation
-Vic.set3dDopplerFactor
-Vic.set3dListenerRelative
-Vic.set3dDistanceDelay
-Vic.set3dCollider
-Vic.set3dAttenuator
-Vic.setInaudibleBehavior
-Vic.setFilter
-Queue.set3dMinMaxDistance
-Queue.set3dAttenuation
-Queue.set3dDopplerFactor
-Queue.set3dListenerRelative
-Queue.set3dDistanceDelay
-Queue.set3dCollider
-Queue.set3dAttenuator
-Queue.setFilter
-Vizsn.stop
-Queue.stop
-Vic.stop
 */

@@ -35,17 +35,6 @@ namespace SoLoud
 
 	class Speech : public AudioSource
 	{
-		// copy of the enum in klatt.h for codegen purposes
-		enum KLATT_WAVEFORM
-		{
-			KW_SAW,
-			KW_TRIANGLE,
-			KW_SIN,
-			KW_SQUARE,
-			KW_PULSE,
-			KW_NOISE,
-			KW_WARBLE
-		};
 	public:
 		int mBaseFrequency;
 		float mBaseSpeed;

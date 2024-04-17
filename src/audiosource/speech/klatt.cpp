@@ -294,7 +294,6 @@ klatt::klatt() :
 	mGlotLast(0),
 	mDecay(0),
 	mOneMd(0),
-	mSeed(5),
 	mElementCount(0),
 	mElement(0),
 	mElementIndex(0),
@@ -576,6 +575,7 @@ void klatt::parwave(short int *jwave)
 	int ns;
 	for (ns = 0; ns < mNspFr; ns++)
 	{
+		static unsigned int seed = 5; /* Fixed staring value */
 		float noise;
 		int n4;
 		float sourc;                   /* Sound source if all-parallel config used  */
@@ -591,13 +591,13 @@ void klatt::parwave(short int *jwave)
 		assumes 32-bit unsigned arithmetic
 		with untested code to handle larger.
 		*/
-		mSeed = mSeed * 1664525 + 1;
+		seed = seed * 1664525 + 1;
 
-		mSeed &= 0xFFFFFFFF;
+		seed &= 0xFFFFFFFF;
 
 		/* Shift top bits of seed up to top of int then back down to LS 14 bits */
 		/* Assumes 8 bits per sizeof unit i.e. a "byte" */
-		nrand = (((int) mSeed) << (8 * sizeof(int) - 32)) >> (8 * sizeof(int) - 14);
+		nrand = (((int) seed) << (8 * sizeof(int) - 32)) >> (8 * sizeof(int) - 14);
 
 		/* Tilt down noise spectrum by soft ELM_FEATURE_LOW-pass filter having
 		*    a pole near the origin in the z-plane, i.e.
@@ -807,7 +807,7 @@ int klatt::phone_to_elm(char *aPhoneme, int aCount, darray *aElement)
     than internal i.e. ext != 0 if 'a' is NOT current element.
  */
 
-static void set_trans(Slope *t, Element * a, Element * b,int ext, int /* e */)
+static void set_trans(Slope *t, Element * a, Element * b,int ext, int e)
 {
 	int i;
 
@@ -886,7 +886,6 @@ void klatt::initsynth(int aElementCount,unsigned char *aElement)
 	mElementCount = aElementCount;
 	mElementIndex = 0;
 	mLastElement = &gElement[0];
-	mSeed = 5;
 	mTStress = 0;
 	mNTStress = 0;
 	mFrame.mF0FundamentalFreq = mBaseF0;
@@ -903,7 +902,7 @@ void klatt::initsynth(int aElementCount,unsigned char *aElement)
 	mStressE.mValue = 0.0;
 }
 
-int klatt::synth(int /* aSampleCount */, short *aSamplePointer)
+int klatt::synth(int aSampleCount, short *aSamplePointer)
 {
 	short *samp = aSamplePointer;
 
@@ -957,6 +956,7 @@ int klatt::synth(int /* aSampleCount */, short *aSamplePointer)
 		{
 			float base = mTop * 0.8f; // 3 * top / 5 
 			float tp[ELM_COUNT];
+			int j;
 
 			if (mTStress == mNTStress)
 			{
@@ -998,7 +998,6 @@ int klatt::synth(int /* aSampleCount */, short *aSamplePointer)
 				}
 			}
 
-			int j;
 			for (j = 0; j < ELM_COUNT; j++)
 			{
 				tp[j] = interpolate(&start[j], &end[j], (float) currentElement->mInterpolator[j].mSteady, t, dur);

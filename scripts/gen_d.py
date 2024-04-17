@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ SoLoud D wrapper generator """
 
 import soloud_codegen
@@ -11,15 +10,12 @@ C_TO_D_TYPES = {
     "int":"int",
     "void":"void",
     "const char *":"const(char)*",
-    "char *":"char*",
     "unsigned int":"uint",
     "float":"float",
     "double":"double",
     "float *":"float[]",
     "File *":"SoloudObject",
-    "const unsigned char *":"ubyte*",
     "unsigned char *":"ubyte*",
-    "unsigned char":"ubyte",
     "short *":"short[]"
 }
 
@@ -207,4 +203,4 @@ fo.write(function_decls)
 
 fo.close()
 
-print("soloud.d generated")
+print "soloud.d generated"

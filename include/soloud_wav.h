@@ -50,8 +50,6 @@ namespace SoLoud
 	{
 		result loadwav(MemoryFile *aReader);
 		result loadogg(MemoryFile *aReader);
-		result loadmp3(MemoryFile *aReader);
-		result loadflac(MemoryFile *aReader);
 		result testAndLoadFile(MemoryFile *aReader);
 	public:
 		float *mData;
@@ -60,7 +58,7 @@ namespace SoLoud
 		Wav();
 		virtual ~Wav();
 		result load(const char *aFilename);
-		result loadMem(const unsigned char *aMem, unsigned int aLength, bool aCopy = false, bool aTakeOwnership = true);
+		result loadMem(unsigned char *aMem, unsigned int aLength, bool aCopy = false, bool aTakeOwnership = true);
 		result loadFile(File *aFile);
 		result loadRawWave8(unsigned char *aMem, unsigned int aLength, float aSamplerate = 44100.0f, unsigned int aChannels = 1);
 		result loadRawWave16(short *aMem, unsigned int aLength, float aSamplerate = 44100.0f, unsigned int aChannels = 1);

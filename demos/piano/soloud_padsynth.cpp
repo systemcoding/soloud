@@ -37,7 +37,7 @@ class PADsynth {
 		number_harmonics - the number of harmonics that are computed */
 	PADsynth(int aSampleCount, float aSamplerate, int aHarmonicsCount);
 
-	virtual ~PADsynth();
+	~PADsynth();
 
 	/* set the amplitude of the n'th harmonic */
 	void setharmonic(int n,float value);
@@ -74,8 +74,6 @@ class PADsynth {
 	virtual float RND();
 
     private:
-	PADsynth(const PADsynth&); // disable copy
-	PADsynth& operator=(PADsynth const&);
 	float *mHarmonics;		//Amplitude of the harmonics
 	float *mFreqAmp;	//Amplitude spectrum
 	float mSamplerate;
@@ -94,7 +92,7 @@ PADsynth::PADsynth(int aSampleCount, float aSamplerate, int aHarmonicsCount)
 	int i;
 	for (i = 0; i < mHarmonicsCount; i++) 
 		mHarmonics[i] = 0.0f;
-	mHarmonics[1] = 1.0f;//default, the first harmonic has the amplitude 1.0
+	mHarmonics[1]=1.0;//default, the first harmonic has the amplitude 1.0
 
     mFreqAmp = new float[mSampleCount / 2];
 };
@@ -132,7 +130,7 @@ float PADsynth::profile(float fi, float bwi)
     return (float)exp(-x) / bwi;
 };
 
-void PADsynth::synth(float f, float bw, float bwscale, float *smp)
+void PADsynth::synth(float f,float bw,float bwscale,float *smp)
 {
     int i, nh;
     

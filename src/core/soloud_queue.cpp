@@ -51,7 +51,6 @@ namespace SoLoud
 				mParent->mSource[mParent->mReadIndex] = 0;
 				mParent->mReadIndex = (mParent->mReadIndex + 1) % SOLOUD_QUEUE_MAX;
 				mParent->mCount--;
-				mLoopCount++;
 			}
 		}
 		return copyofs;
@@ -59,7 +58,7 @@ namespace SoLoud
 
 	bool QueueInstance::hasEnded()
 	{
-		return mLoopCount != 0 && mParent->mCount == 0;
+		return mParent->mCount == 0;
 	}
 
 	QueueInstance::~QueueInstance()
@@ -73,9 +72,6 @@ namespace SoLoud
 		mReadIndex = 0;
 		mWriteIndex = 0;
 		mCount = 0;
-		int i;
-		for (i = 0; i < SOLOUD_QUEUE_MAX; i++)
-			mSource[i] = 0;
 	}
 	
 	QueueInstance * Queue::createInstance()
@@ -97,7 +93,7 @@ namespace SoLoud
 		{
 			if (mSoloud->mVoice[i] == mInstance)
 			{
-				mQueueHandle = mSoloud->getHandleFromVoice_internal(i);
+				mQueueHandle = mSoloud->getHandleFromVoice(i);
 			}
 		}
 	}
@@ -129,14 +125,14 @@ namespace SoLoud
 		{
 			return OUT_OF_MEMORY;
 		}
-		instance->init(aSound, 0);
+
 		instance->mAudioSourceID = aSound.mAudioSourceID;
 
-		mSoloud->lockAudioMutex_internal();
+		mSoloud->lockAudioMutex();
 		mSource[mWriteIndex] = instance;
 		mWriteIndex = (mWriteIndex + 1) % SOLOUD_QUEUE_MAX;
 		mCount++;
-		mSoloud->unlockAudioMutex_internal();
+		mSoloud->unlockAudioMutex();
 
 		return SO_NO_ERROR;
 	}
@@ -144,24 +140,20 @@ namespace SoLoud
 
 	unsigned int Queue::getQueueCount()
 	{
-		if (!mSoloud)
-		{
-			return 0;
-		}
 		unsigned int count;
-		mSoloud->lockAudioMutex_internal();
+		mSoloud->lockAudioMutex();
 		count = mCount;
-		mSoloud->unlockAudioMutex_internal();
+		mSoloud->unlockAudioMutex();
 		return count;
 	}
 
 	bool Queue::isCurrentlyPlaying(AudioSource &aSound)
 	{
-		if (mSoloud == 0 || mCount == 0 || aSound.mAudioSourceID == 0)
+		if (mCount == 0 || aSound.mAudioSourceID == 0)
 			return false;
-		mSoloud->lockAudioMutex_internal();
+		mSoloud->lockAudioMutex();
 		bool res = mSource[mReadIndex]->mAudioSourceID == aSound.mAudioSourceID;
-		mSoloud->unlockAudioMutex_internal();
+		mSoloud->unlockAudioMutex();
 		return res;
 	}
 

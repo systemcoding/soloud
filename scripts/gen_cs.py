@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ SoLoud C# (cs) wrapper generator """
 
 import soloud_codegen
@@ -11,15 +10,12 @@ C_TO_CS_TYPES = {
     "int":"int",
     "void":"void",
     "const char *":"string",
-    "char *":"string",
     "unsigned int":"uint",
     "float":"float",
     "double":"double",
     "float *":"float[]",
     "File *":"SoloudObject",
     "unsigned char *":"IntPtr",
-    "const unsigned char *":"IntPtr",
-    "unsigned char":"byte",
     "short *":"IntPtr"
 }
 
@@ -108,16 +104,9 @@ def fix_default_param(defparam, classname):
     """ 'fixes' default parameters from C to what python expectes """
     if (classname + '::') == defparam[0:len(classname)+2:]:
         return defparam[len(classname)+2::]
-
-    # The C API doesn't use BOOL, so the generated source will use int too,
-    # using a boolean as the default param for an int won't work.
-    if defparam == "true":
-        return "1"
-    elif defparam == "false":
-        return "0"
-
-    # C# uses . as namespace/class separator
-    return defparam.replace("::", ".")
+    #if defparam[len(defparam)-1] == "f":
+    #    return defparam[0:len(defparam)-1]
+    return defparam
 
 def external_pointer_fix(param):
     if param == "SoloudObject":
@@ -132,7 +121,7 @@ for x in soloud_codegen.soloud_type:
         if (x + "_") == y[1][0:len(x)+1:]:
             if first:
                 fo.write('\n')
-                fo.write('public class %s : SoloudObject, IDisposable\n{\n'%(x))
+                fo.write('public class %s : SoloudObject\n{\n'%(x))
                 for z in soloud_codegen.soloud_enum:
                     if z[0:len(x)+1] == x.upper()+'_':
                         s = str(soloud_codegen.soloud_enum[z])
@@ -144,13 +133,6 @@ for x in soloud_codegen.soloud_type:
                 fo.write('\n\t[DllImport("soloud_x86.dll", CallingConvention = CallingConvention.Cdecl)]\n\tinternal static extern IntPtr %s_destroy(IntPtr aObjHandle);\n'%(x))
                 fo.write('\t~%s()\n\t{\n'%(x))
                 fo.write('\t\t%s_destroy(objhandle);\n'%(x))
-                fo.write('\t}\n')
-                fo.write('\tpublic void Dispose()\n\t{\n')
-                fo.write('\t\tif (objhandle != IntPtr.Zero) {\n')
-                fo.write('\t\t\t%s_destroy(objhandle);\n'%(x))
-                fo.write('\t\t\tobjhandle = IntPtr.Zero;\n')
-                fo.write('\t\t\tGC.SuppressFinalize(this);\n')
-                fo.write('\t\t}\n')
                 fo.write('\t}\n')
                 
                 first = False
@@ -166,9 +148,6 @@ for x in soloud_codegen.soloud_type:
                 floatptr = False
                 ret = C_TO_CS_TYPES[y[0]]
                 if y[0] == 'const char *':                    
-                    charptr = True
-                    ret = 'IntPtr'
-                if y[0] == 'const unsigned char *':                    
                     charptr = True
                     ret = 'IntPtr'
                 if y[0] == 'float *':
@@ -243,6 +222,6 @@ for x in soloud_codegen.soloud_type:
 
 fo.write('}\n')
 
-print("soloud.cs generated")
+print "soloud.cs generated"
 
 fo.close()

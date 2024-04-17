@@ -720,7 +720,6 @@ static int xlate_cardinal(int value, darray *phone)
 	return nph;
 }
 
-#if 0
 /*
 ** Translate a number to phonemes.  This version is for ORDINAL numbers.
 **       Note: this is recursive.
@@ -834,7 +833,7 @@ static int xlate_ordinal(int value, darray *phone)
 
 	return nph;
 }
-#endif
+
 
 static int isvowel(int chr)
 {
@@ -1165,7 +1164,7 @@ static void guess_word(darray *arg, char *word)
 static int NRL(const char *s, int n, darray *phone)
 {
 	int old = phone->getSize();
-	char *word = (char *) malloc(n + 3); // TODO: may return null
+	char *word = (char *) malloc(n + 3);
 	char *d = word;
 	*d++ = ' ';
 
@@ -1174,7 +1173,7 @@ static int NRL(const char *s, int n, darray *phone)
 		char ch = *s++;
 
 		if (islower(ch))
-			ch = (char)toupper(ch);
+			ch = toupper(ch);
 
 		*d++ = ch;
 	}
@@ -1218,7 +1217,7 @@ static int suspect_word(const char *s, int n)
 		if (islower(ch))
 		{
 			seen_lower = 1;
-			ch = (char)toupper(ch);
+			ch = toupper(ch);
 		}
 
 		if (ch == 'A' || ch == 'E' || ch == 'I' || ch == 'O' || ch == 'U' || ch == 'Y')
@@ -1271,9 +1270,8 @@ int xlate_string(const char *string, darray *phone)
 	while (isspace(ch = *s))
 		s++;
 
-	while (*s)
+	while ((ch = *s))
 	{
-		ch = *s;
 		const char *word = s;
 
 		if (isalpha(ch))
@@ -1289,9 +1287,8 @@ int xlate_string(const char *string, darray *phone)
 			}
 			else
 			{
-				while (*s && !isspace(*s) && !ispunct(*s))
+				while ((ch = *s) && !isspace(ch) && !ispunct(ch))
 				{
-					ch = *s;
 					s++;
 				}
 
@@ -1339,13 +1336,13 @@ int xlate_string(const char *string, darray *phone)
 			{
 				if (ch == '[' && strchr(s, ']'))
 				{
-					const char *thisword = s;
+					const char *word = s;
 
 					while (*s && *s++ != ']')
 						/* nothing */
 						;
 
-					nph += xlate_word(thisword, (int)(s - thisword), phone);
+					nph += xlate_word(word, (int)(s - word), phone);
 				}
 				else
 				{
@@ -1405,9 +1402,8 @@ int xlate_string(const char *string, darray *phone)
 					}
 					else
 					{
-						while (*s && !isspace(*s))
+						while ((ch = *s) && !isspace(ch))
 						{
-							ch = *s;
 							s++;
 						}
 
